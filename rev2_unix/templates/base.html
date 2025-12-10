@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- <title> Piloting Page HOME </title> -->
+    <title>{% block title %}Seaglider Monitoring Home Page{% endblock %}</title>
+    <!-- <link rel="stylesheet" href="{{url_for('static', filename='css/navbar_styles.css')}}" /> -->
+    <link rel="stylesheet" href="static/css/navbar_styles.css" />
+</head>
+
+<body>
+
+	<div class="disclaimer"> <i>This website is experimental and intended for internal use only</i> </div>
+
+    <nav class="navbar">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <!-- <li><a href="home">Home</a></li> -->
+            {% for id in sgid_list %}
+            <!-- <li><a href="{{ url_for('stats', sgid=id) }}">SG{{id}}</a></li> -->
+            <li><a href="stats_{{id}}.html">SG{{id}}</a></li>
+            {% endfor %}
+            <ul class="timestamp">{{proccess_time}}</ul>
+        </ul>
+    </nav>
+
+    <!-- Only show subnavigation bar if not in HOME website -->
+    {% if homeFlag==False %}
+    <!-- <link rel="stylesheet" href="{{url_for('static', filename='css/subnavbar_styles.css')}}" /> -->
+    <link rel="stylesheet" href="static/css/subnavbar_styles.css" />
+
+    <nav class="subnavbar">
+        <ul>
+
+            <!-- <li><a href="{{ url_for('stats', sgid=sgid) }}">STATS</a></li>
+            <li><a href="{{ url_for('table', sgid=sgid)}}">TABLE</a></li>
+            <li><a href="{{ url_for('map', sgid=sgid)}}">MAP</a></li>
+            <li><a href="{{ url_for('plots', sgid=sgid)}}">PLOTS</a></li> -->
+            <li><a href="stats_{{sgid}}.html">STATS</a></li>
+            <li><a href="table_{{sgid}}.html">TABLE</a></li>
+            <li><a href="map_{{sgid}}.html">MAP</a></li>
+            <li><a href="plots_{{sgid}}.html">PLOTS</a></li>
+        </ul>
+    </nav>
+    {% endif %}
+
+    <!--  Show specifit page content -->
+    {% block content %}{% endblock %}
+
+</body>
+
+</html>

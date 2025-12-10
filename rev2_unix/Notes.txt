@@ -1,0 +1,36 @@
+Renaming the parent directory breaks the virtual environment, so don't do it!
+
+A) SETUP
+
+1) Create a virtual environment to install required libraries locally 
+	>> python3 -m venv .venv-sg
+2) Activate virtual environment: 
+	>> source ./venv-sg/bin/activate
+2) "pip install requirements.txt" or "pip install" the following libraries:
+pandas
+Flask
+Frozen-Flask
+folium
+netCDF4
+numpy
+plotly
+
+---------------------------------------------------------------------------------------------------
+
+B) RUN SCRIPTS
+
+1) Edit the sgid_list.py file with the source directory containing the .nc files, and the list of seaglider IDs to process. 
+	1.1) The source dir with .nc files should be located anywhere in phodnet, following the next steps.
+	1.2) The files are first sent to the AOML FTP server using the .ftp file directive (basestation), into 
+		"ftp.aoml.noaa.gov/phod/incoming/aoml.glider/dataDir/sgNNN". Files in the incoming dir are deleted after 30 days.
+	1.3) Copy the files from the AOML FTP into phodnet "/phodnet/share/aomlglider/GLIDER_DATA/rawData" (RAWDATA), by running 
+		"RunBackup.sh" in a crontab. Make sure sgID list (GLIDERs_ids_use) and mission number (MISSION) are updated.
+		This will be the source directory to read .nc files and create the database.
+
+2) Run "make_db.py" to parse the .nc files and create am sqlite database.
+3) Run "make_web.py" to read the database and generate the html files in the designated directory (websiteDir).
+4) Run "send_website.py" to copy the webpage files to the desired public webserver directory.
+
+---------------------------------------------------------------------------------------------------
+
+C) All steps in (B) are compiled in RunGliderWeb.sh -> cd to this dir and run ./RunGliderWeb.sh

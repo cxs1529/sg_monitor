@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %} SG{{ sgid }} Map {% endblock %}
+
+{% block content %}
+
+<!-- <link rel="stylesheet" href="{{url_for('static', filename='css/map_styles.css')}}" /> -->
+<link rel="stylesheet" href="static/css/map_styles.css" />
+
+<h1> <u>SG{{sgid}} MAP</u></h1>
+
+{{ navigation_html|safe }}
+
+<hr>
+
+<iframe src="static/{{fname}}"></iframe>
+<!-- <iframe src="{{url_for('static', filename=fname)}}"></iframe> -->
+
+{% endblock %}

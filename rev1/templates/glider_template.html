@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %} SG{{ sgid }} Stats {% endblock %}
+
+
+{% block content %}
+
+
+<!-- <link rel="stylesheet" href="{{url_for('static', filename='css/gliderdash_styles.css')}}" /> -->
+<link rel="stylesheet" href="static/css/gliderdash_styles.css" />
+
+<h1> <u>SG{{sgid}} STATS</u></h1>
+
+<h2>NAVIGATION</h2>
+{{ navigation_dash|safe }}
+
+<h2>HEALTH</h2>
+{{ health_dash|safe }}
+
+<h2>CALL</h2>
+{{ call_dash|safe }}
+
+<h2>ERRORS (error | retry)</h2>
+{{ error_dash|safe }}
+
+<h2>RATES</h2>
+{{ rates_dash|safe }}
+
+{% endblock %}

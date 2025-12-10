@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %} SG{{ sgid }} table {% endblock %}
+
+
+{% block content %}
+
+<!-- <link rel="stylesheet" href="{{url_for('static', filename='css/table_styles.css')}}" /> -->
+<link rel="stylesheet" href="static/css/table_styles.css" />
+
+<h1> <u>SG{{sgid}} TABLE</u></h1>
+
+<table class="table"> {{ table_data|safe }} </table>
+
+{% endblock %}

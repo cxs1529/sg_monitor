@@ -1,0 +1,28 @@
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>DataFrame Table</title>
+        <style>
+            /* Basic styling for the table */
+            .data-table {
+                width: 80%;
+                margin: 20px auto;
+                border-collapse: collapse;
+            }
+            .data-table th, .data-table td {
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }
+            .data-table th {
+                background-color: #f2f2f2;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Pandas DataFrame in Flask</h1>
+        {{ table | safe }} {# Render the HTML string, 'safe' prevents escaping #}
+    </body>
+    </html>
