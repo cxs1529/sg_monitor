@@ -1,29 +1,41 @@
 ## NetCDF file processing and website generation for AUV seaglider pilot monitoring dashboard
+The application creates a static website based on Flask and Flask-freeze.
 
-### Database creation
-Run main_db.py indicating a directory containing glider directories with the respective netcdf files. The script will parse the .nc files and store data into an SQLite database.
-If the database exists, it will look for the file and skip its processing if it was already process to improve processing time.
+### Website generation configuration and run steps
+1) Edit the *sgid_list.py* file with the source directory containing the .nc files, and the list of seaglider IDs to process.
+2) Run *make_db.py* to parse the .nc files and create am sqlite database.
+3) Run *make_web.py* to read the database and generate the html files in the designated directory (*websiteDir*).
+4) Run *send_website.py* to copy the webpage files to the desired public webserver directory.
 
-### Website generation
-Run run.py to generate the html files based on the database created.
-The database must exist to run this script.
-This script creates a static website, based in the app.py script based in Flask.
+### Website generation in one script
+Edit the *sgid_list.py* and run the bash scipt: 
+All steps indicated above are compiled in RunGliderWeb.sh -> cd to this dir and run ./RunGliderWeb.sh
 
-### Example Website
-https://cxs1529.github.io/piloting-monitoring/
+### Versions
+- rev1: original version outdated.
+- rev2: latest version working on live webserver.
+
+### Example Website (rev2)
+https://cxs1529.github.io/sg_monitor/rev2_unix/static_website/index.html
+
 
 #### HOME PAGE
-![glider_home](https://github.com/user-attachments/assets/d59608e1-598a-4896-8859-0aa928d42b72)
+![homepage](https://github.com/user-attachments/assets/0723a392-cc59-44c5-b452-68f76737a7c5)
+![homepage2](https://github.com/user-attachments/assets/2d37d656-32fc-4e3e-804b-da970b575c51)
 
 #### GLIDER STATUS PAGE
-![glider_dashboard](https://github.com/user-attachments/assets/492b0b3a-6f7d-4fc1-aef0-04ce72ed4394)
+![stats](https://github.com/user-attachments/assets/ba666961-1ff3-4338-ac04-dc2de2c70551)
+
 
 #### GLIDER LOG TABLE PAGE
-![glider_logtable](https://github.com/user-attachments/assets/05a0c48a-0fe2-4077-af92-5bfd8a8dcf4c)
+![table](https://github.com/user-attachments/assets/34f285f2-db29-45a6-9898-8d1344c8643e)
+
 
 #### GLIDER MAP PAGE 
-![glider_map](https://github.com/user-attachments/assets/6be2d443-e942-479f-a248-f73da66e91ef)
+![map](https://github.com/user-attachments/assets/353e4c1b-83bb-443a-aeb1-00dd66097780)
+
 
 #### GLIDER PLOTS PAGE
-![glider_plots](https://github.com/user-attachments/assets/67d74c6a-f7f8-4f22-b8b7-70ab4f860532)
+![plots](https://github.com/user-attachments/assets/1b113887-5d55-43e5-a944-8325bf958e57)
+
 
