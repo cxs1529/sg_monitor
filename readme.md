@@ -13,11 +13,12 @@ All steps indicated above are compiled in RunGliderWeb.sh -> cd to this dir and 
 
 ### Versions
 - rev1: original version outdated.
-- rev2: latest version working on live webserver.
+- rev3: latest version working on a Linux server as of 9/15/2026.
 
-### Example Website (rev2)
-https://cxs1529.github.io/sg_monitor/rev2_unix/static_website/index.html
+### Example Website (rev3)
+https://cxs1529.github.io/sg_monitor/index.html
 
+Note: only includes json files for dives 1-10 as examples.
 
 #### HOME PAGE
 ![homepage](https://github.com/user-attachments/assets/0723a392-cc59-44c5-b452-68f76737a7c5)
