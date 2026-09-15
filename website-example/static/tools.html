@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seaglider targets tool</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-measure@3.1.0/dist/leaflet-measure.css" />
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #sidebar {
+            width: 575px;
+            min-width: 300px;
+            max-width: 80vw;
+            background-color: #f4f4f4;
+            padding: 15px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #ccc;
+            resize: horizontal;
+            overflow: auto;
+            z-index: 2000;
+        }
+
+        #map {
+            flex-grow: 1;
+            height: 100%;
+            z-index: 1;
+            cursor: crosshair;
+            background-color: #aad3df;
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+
+        h3 {
+            font-size: 14px;
+            margin: 0 0 8px 0;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 2px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            min-height: 150px;
+            flex-shrink: 0;
+            margin-bottom: 5px;
+            font-family: monospace;
+            padding: 8px;
+            box-sizing: border-box;
+            resize: vertical;
+            white-space: pre;
+            overflow: auto;
+            font-size: 13px;
+            border: 1px solid #ccc;
+        }
+
+        .tool-container {
+            margin-bottom: 10px;
+            background: #e9e9e9;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #dcdcdc;
+            flex-shrink: 0;
+        }
+
+        /* Side-by-Side Tools */
+        .side-by-side-tools {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .side-by-side-tools .tool-container {
+            flex: 1;
+            margin-bottom: 0;
+            min-width: 0;
+        }
+
+        .side-by-side-tools .compact-row {
+            gap: 3px;
+        }
+
+        .side-by-side-tools input,
+        .side-by-side-tools select,
+        .side-by-side-tools button {
+            font-size: 11px;
+            padding: 2px;
+        }
+
+        .side-by-side-tools .label-sm {
+            font-size: 10px;
+            width: auto;
+            margin-right: 3px;
+            white-space: nowrap;
+        }
+
+        .side-by-side-tools select {
+            width: 45px;
+        }
+
+        .compact-row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 5px;
+        }
+
+        .compact-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .label-sm {
+            font-size: 12px;
+            font-weight: 600;
+            width: 35px;
+        }
+
+        input[type="number"],
+        input[type="text"] {
+            padding: 3px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 13px;
+            flex-grow: 1;
+            width: 50px;
+            box-sizing: border-box;
+        }
+
+        select {
+            padding: 2px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 12px;
+            width: 60px;
+        }
+
+        input[type="color"] {
+            border: none;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            padding: 0;
+            background: none;
+        }
+        
+        input[type="checkbox"] {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        button {
+            width: 100%;
+            padding: 6px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-small {
+            padding: 6px 8px;
+            font-size: 12px;
+            width: auto;
+            flex-grow: 1;
+            background-color: #6c757d;
+        }
+
+        .btn-download {
+            background-color: #17a2b8;
+            margin-bottom: 10px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .btn-download:hover {
+            background-color: #138496;
+        }
+
+        /* Mission Data Styles */
+        #missionSelect {
+            width: 100%;
+            margin-bottom: 8px;
+            padding: 4px;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            font-size: 12px;
+        }
+
+        .data-item {
+            background: #fff;
+            padding: 4px;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+        }
+
+        .data-label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .data-val {
+            float: right;
+            font-weight: bold;
+            color: #000;
+        }
+
+        /* String Parser Styles */
+        .parse-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            font-size: 11px;
+            margin-top: 10px;
+            max-height: 220px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .parse-item {
+            background: #fff;
+            padding: 3px 5px;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .parse-lbl {
+            font-weight: bold;
+            color: #555;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-right: 5px;
+        }
+
+        .parse-val {
+            color: #000;
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        /* Time Bar Styles */
+        .comm-calc {
+            margin-top: 10px;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+        }
+
+        .time-window-container {
+            margin-top: 15px;
+            display: none;
+        }
+
+        .time-bar-graphic {
+            position: relative;
+            height: 6px;
+            background: #ddd;
+            border-radius: 3px;
+            margin: 0 10px 10px 10px;
+        }
+
+        .time-window-fill {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            background: #28a745;
+            border-radius: 3px;
+            opacity: 0.6;
+        }
+
+        .time-tick {
+            position: absolute;
+            width: 2px;
+            height: 10px;
+            background: #000;
+            top: -2px;
+        }
+
+        .time-tick.start {
+            left: 0;
+        }
+
+        .time-tick.mid {
+            left: 50%;
+            height: 14px;
+            top: -4px;
+            width: 3px;
+            background: #0056b3;
+        }
+
+        .time-tick.end {
+            right: 0;
+        }
+
+        .time-labels-row {
+            display: flex;
+            justify-content: space-between;
+            text-align: center;
+            font-size: 11px;
+            line-height: 1.2;
+        }
+
+        .time-label-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 33%;
+        }
+
+        .time-label-group.start {
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        .time-label-group.end {
+            align-items: flex-end;
+            text-align: right;
+        }
+
+        .lbl-title {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 2px;
+        }
+
+        .lbl-utc {
+            font-weight: bold;
+            color: #000;
+        }
+
+        .lbl-est {
+            color: #666;
+            font-size: 10px;
+        }
+
+        /* Countdown Styles */
+        .lbl-countdown {
+            margin-top: 4px;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 11px;
+            color: #d63384;
+            background: #fff0f6;
+            padding: 2px 4px;
+            border-radius: 3px;
+            border: 1px solid #fcc2d7;
+        }
+
+        .lbl-countdown.overdue {
+            color: #dc3545;
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        .error {
+            color: red;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .result-text {
+            font-weight: bold;
+            color: #007bff;
+            font-size: 13px;
+            margin-left: 5px;
+        }
+
+        .popup-content {
+            line-height: 1.6;
+        }
+
+        .leaflet-control-measure .measure-result-popup .measure-result-val {
+            color: black;
+        }
+
+        /* Mouse Coordinates Control */
+        .mouse-coords {
+            background-color: rgba(255, 255, 255, 0.85);
+            padding: 5px 8px;
+            font-size: 12px;
+            font-family: monospace;
+            font-weight: bold;
+            border: 2px solid rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            color: #333;
+            min-width: 150px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="sidebar">
+        <h2>Target Plotter</h2>
+
+        <textarea id="targetInput" spellcheck="false" placeholder="Paste Data Here...">NR      lat=1827.750  lon=-6718.300  radius=500   goto=NR
+NA1U    lat=1854.235  lon=-6638.604  radius=2000  goto=NA2U  escape=ESC
+NA2U    lat=1941.753  lon=-6650.160  radius=2000  goto=NA3U  escape=ESC
+NA2D    lat=1941.753  lon=-6650.160  radius=2000  goto=NA1U  escape=ESC
+NA3U    lat=2033.553  lon=-6702.574  radius=2000  goto=NA4U  escape=ESC
+NA3D    lat=2033.553  lon=-6702.574  radius=2000  goto=NA2D  escape=ESC
+NA4U    lat=2111.653  lon=-6653.586  radius=2000  goto=NA5D  escape=ESC
+NA4D    lat=2111.653  lon=-6653.586  radius=2000  goto=NA3D  escape=ESC
+NA5D    lat=2144.616  lon=-6645.024  radius=2000  goto=NA4D  escape=ESC
+NB1U    lat=1854.235  lon=-6559.646  radius=2000  goto=NB2U  escape=ESC
+NB2U    lat=1942.182  lon=-6559.646  radius=2000  goto=NB3U  escape=ESC
+NB2D    lat=1942.182  lon=-6559.646  radius=2000  goto=NB1U  escape=ESC
+NB3U    lat=2042.115  lon=-6559.646  radius=2000  goto=NB4D  escape=ESC
+NB3D    lat=2042.115  lon=-6559.646  radius=2000  goto=NB2D  escape=ESC
+NB4D    lat=2072.115  lon=-6559.646  radius=2000  goto=NB3D  escape=ESC
+NB5D    lat=2144.616  lon=-6559.646  radius=2000  goto=NB4D  escape=ESC
+NC1U    lat=1853.720  lon=-6512.042  radius=2000  goto=NC2U  escape=ESC
+NC2U    lat=1942.602  lon=-6524.378  radius=2000  goto=NC3U  escape=ESC
+NC2D    lat=1942.602  lon=-6524.378  radius=2000  goto=NC1U  escape=ESC
+NC3U    lat=2042.904  lon=-6539.450  radius=2000  goto=NC4D  escape=ESC
+NC3D    lat=2042.904  lon=-6539.450  radius=2000  goto=NC2D  escape=ESC
+NC4D    lat=2073.904  lon=-6546.460  radius=2000  goto=NC3D  escape=ESC
+NC5D    lat=2145.034  lon=-6554.072  radius=2000  goto=NC4D  escape=ESC
+ESC     lat=1835.160  lon=-6607.380  radius=500   goto=ESC</textarea>
+
+        <div class="tool-container">
+            <div class="compact-row" style="justify-content: space-between; flex-wrap: wrap;">
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <span class="label-sm" style="width:auto;">Color:</span>
+                    <input type="color" id="markerColor" value="#ff0000">
+                </div>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <span class="label-sm" style="width:auto;">Size:</span>
+                    <input type="number" id="markerSize" value="8" min="1" max="50" style="width:40px;">
+                </div>
+                <div style="display:flex; align-items:center; gap:3px;">
+                    <input type="checkbox" id="showEscRoutes" checked>
+                    <span class="label-sm" style="width:auto; cursor:pointer;" onclick="document.getElementById('showEscRoutes').click()">ESC Lines</span>
+                </div>
+                <button onclick="plotTargets()" style="width:auto; flex-grow:0; padding: 5px 15px;">Plot</button>
+            </div>
+            <div id="statusMessage" class="error"></div>
+        </div>
+
+        <div class="tool-container">
+            <div class="side-by-side-tools" style="margin-bottom:0;">
+                <button onclick="downloadTargets()" class="btn-small" style="background-color: #17a2b8; color: white;">💾 Download Targets</button>
+                <button onclick="window.open('gc_plotter.html', '_blank')" class="btn-small" style="background-color: #6f42c1; color: white;">📈 GC Data Plotter</button>
+            </div>
+        </div>
+
+        <div class="side-by-side-tools">
+
+            <div class="tool-container">
+                <h3>Travel Time</h3>
+                <div class="compact-row">
+                    <span class="label-sm">Distance:</span>
+                    <input type="number" id="calcDist" placeholder="150">
+                    <select id="calcDistUnit">
+                        <option value="nm">NM</option>
+                        <option value="km">km</option>
+                        <option value="mi">mi</option>
+                        <option value="m">m</option>
+                    </select>
+                </div>
+                <div class="compact-row">
+                    <span class="label-sm">Speed:</span>
+                    <input type="number" id="calcSpeed" placeholder="250">
+                    <select id="calcSpeedUnit">
+                        <option value="kts">kts</option>
+                        <option value="kph">km/h</option>
+                        <option value="mph">mph</option>
+                        <option value="mps">m/s</option>
+                    </select>
+                </div>
+                <div class="compact-row" style="margin-top:8px;">
+                    <button onclick="calculateTime()" class="btn-small" style="background-color:#007bff; color: white;">Calculate</button>
+                    <span id="timeResult" class="result-text"></span>
+                </div>
+            </div>
+
+            <div class="tool-container">
+                <h3>Coordinates Converter</h3>
+                <div class="compact-row">
+                    <span class="label-sm" style="width:40px;">DD:</span>
+                    <input type="text" id="convDD" placeholder="26.52123">
+                    <button onclick="syncCoords('DD')" class="btn-small" style="background-color:#17a2b8; color: white;">Sync</button>
+                </div>
+                <div class="compact-row">
+                    <span class="label-sm" style="width:40px;">DDM:</span>
+                    <input type="text" id="convDDM" placeholder="2631.274">
+                    <button onclick="syncCoords('DDM')" class="btn-small" style="background-color:#17a2b8; color: white;">Sync</button>
+                </div>
+                <div class="compact-row">
+                    <span class="label-sm" style="width:40px;">DMS:</span>
+                    <input type="text" id="convDMS" placeholder="-26 31 16.44">
+                    <button onclick="syncCoords('DMS')" class="btn-small" style="background-color:#17a2b8; color: white;">Sync</button>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="tool-container">
+            <h3>Cmdfile | Mission Depth Parameters</h3>
+            <select id="missionSelect" onchange="updateMissionData()">
+                <option value="">Select D_TGT (Depth)...</option>
+            </select>
+
+            <div class="data-grid">
+                <div class="data-item"><span class="data-label">D_ABORT</span> <span id="val_d_abort" class="data-val">-</span></div>
+                <div class="data-item"><span class="data-label">T_DIVE</span> <span id="val_t_dive" class="data-val">-</span></div>
+                <div class="data-item"><span class="data-label">T_MISSION</span> <span id="val_t_mission" class="data-val">-</span></div>
+                <div class="data-item"><span class="data-label">T_ABORT</span> <span id="val_t_abort" class="data-val">-</span></div>
+            </div>
+
+            <div class="comm-calc">
+                <label style="font-size:12px; font-weight:bold; margin-bottom:5px; display:block;">Next Communication Window</label>
+                <div class="compact-row">
+                    <span class="label-sm" style="width:50px;">UTC In:</span>
+                    <input type="text" id="commInputTime" placeholder="HH:MM:SS" title="Insert the time of the last disconnect, shown at the end of the comm.log">
+                </div>
+                <div class="compact-row" style="margin-top:5px;">
+                    <button onclick="calcCommTime()" class="btn-small" style="background-color:#28a745; color: white;">Calculate Call Window</button>
+                </div>
+
+                <div id="timeWindowResult" class="time-window-container">
+                    <div class="time-bar-graphic">
+                        <div class="time-window-fill"></div>
+                        <div class="time-tick start"></div>
+                        <div class="time-tick mid"></div>
+                        <div class="time-tick end"></div>
+                    </div>
+                    <div class="time-labels-row">
+                        <div class="time-label-group start">
+                            <span class="lbl-title">Earliest</span>
+                            <span id="lblEarliestUTC" class="lbl-utc">--:--</span>
+                            <span id="lblEarliestEST" class="lbl-est">--:--</span>
+                        </div>
+                        <div class="time-label-group mid">
+                            <span class="lbl-title" style="color:#0056b3">Expected</span>
+                            <span id="lblExpectedUTC" class="lbl-utc">--:--</span>
+                            <span id="lblExpectedEST" class="lbl-est">--:--</span>
+                            <span id="lblCountdown" class="lbl-countdown"></span>
+                        </div>
+                        <div class="time-label-group end">
+                            <span class="lbl-title">Latest</span>
+                            <span id="lblLatestUTC" class="lbl-utc">--:--</span>
+                            <span id="lblLatestEST" class="lbl-est">--:--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tool-container">
+            <h3>Comm.log | Status String Parser</h3>
+            <div class="compact-row">
+                <input type="text" id="statusStringInput" placeholder="Paste 153:0:1... GPS... string here" style="width:100%; font-size:11px;">
+            </div>
+            <div class="compact-row" style="margin-top:5px;">
+                <button onclick="parseStatusString()" class="btn-small" style="background-color:#17a2b8; color: white;">Parse status String</button>
+            </div>
+            <div id="parsedDataResult" class="parse-grid"></div>
+        </div>
+
+        <div class="tool-container">
+            <h3>Log | Error String Parser</h3>
+            <div class="compact-row">
+                <input type="text" id="errorStringInput" placeholder="Paste $ERRORS... string here" style="width:100%; font-size:11px;">
+            </div>
+            <div class="compact-row" style="margin-top:5px;">
+                <button onclick="parseErrorString()" class="btn-small" style="background-color:#dc3545; color:white;">Parse Errors</button>
+            </div>
+            <div id="parsedErrorResult" class="parse-grid"></div>
+        </div>
+
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
+    <script src="https://unpkg.com/leaflet-measure@3.1.0/dist/leaflet-measure.en.js"></script>
+
+    <script>
+        // --- DATA ---
+        const missionData = [
+            { d_tgt: 45, d_abort: 100, t_dive: 15, t_mission: 25, t_abort: 100 },
+            { d_tgt: 100, d_abort: 125, t_dive: 33, t_mission: 40, t_abort: 100 },
+            { d_tgt: 150, d_abort: 175, t_dive: 50, t_mission: 60, t_abort: 120 },
+            { d_tgt: 200, d_abort: 225, t_dive: 66, t_mission: 80, t_abort: 160 },
+            { d_tgt: 250, d_abort: 275, t_dive: 84, t_mission: 100, t_abort: 200 },
+            { d_tgt: 300, d_abort: 325, t_dive: 100, t_mission: 120, t_abort: 240 },
+            { d_tgt: 350, d_abort: 375, t_dive: 117, t_mission: 140, t_abort: 280 },
+            { d_tgt: 400, d_abort: 425, t_dive: 132, t_mission: 160, t_abort: 320 },
+            { d_tgt: 450, d_abort: 475, t_dive: 150, t_mission: 180, t_abort: 360 },
+            { d_tgt: 500, d_abort: 525, t_dive: 165, t_mission: 200, t_abort: 400 },
+            { d_tgt: 550, d_abort: 575, t_dive: 183, t_mission: 220, t_abort: 440 },
+            { d_tgt: 600, d_abort: 625, t_dive: 200, t_mission: 240, t_abort: 480 },
+            { d_tgt: 700, d_abort: 725, t_dive: 230, t_mission: 280, t_abort: 560 },
+            { d_tgt: 800, d_abort: 825, t_dive: 260, t_mission: 310, t_abort: 620 },
+            { d_tgt: 900, d_abort: 925, t_dive: 300, t_mission: 360, t_abort: 720 },
+            { d_tgt: 960, d_abort: 990, t_dive: 320, t_mission: 380, t_abort: 760 },
+            { d_tgt: 990, d_abort: 1015, t_dive: 330, t_mission: 396, t_abort: 792 }
+        ];
+
+        let countdownInterval = null;
+        let map, markersLayer, mousePosControl;
+        window.targetBounds = []; // Stores the current map bounds of plotted targets
+
+        // --- MAP INITIALIZATION ---
+        function initMap() {
+            if (typeof L === 'undefined') {
+                console.error("Leaflet not loaded.");
+                return;
+            }
+
+            // Setting crossOrigin ensures tiles aren't marked as "tainted" by html2canvas
+            const streetMap = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19, attribution: '&copy; OpenStreetMap', crossOrigin: true
+            });
+
+            const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri', maxZoom: 19, crossOrigin: true
+            });
+
+            const oceanBase = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri', maxNativeZoom: 10, maxZoom: 19, crossOrigin: true
+            });
+
+            const oceanReference = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/{z}/{y}/{x}', {
+                maxNativeZoom: 10, maxZoom: 19, opacity: 0.8, crossOrigin: true
+            });
+
+            const oceanComposite = L.layerGroup([oceanBase, oceanReference]);
+
+            map = L.map('map', {
+                measureControl: false,
+                layers: [streetMap]
+            }).setView([0, 0], 2);
+
+            const measureControl = new L.Control.Measure({
+                position: 'topright',
+                primaryLengthUnit: 'kilometers',
+                secondaryLengthUnit: 'nauticalMiles',
+                primaryAreaUnit: 'sqkilometers',
+                secondaryAreaUnit: 'sqmiles',
+                activeColor: '#007bff', completedColor: '#0056b3',
+                units: { nauticalMiles: { factor: 0.000539957, display: 'NM', decimals: 2 } }
+            });
+            measureControl.addTo(map);
+
+            const baseMaps = {
+                "Street Map": streetMap,
+                "Satellite": satelliteMap,
+                "Ocean (Bathymetry)": oceanComposite
+            };
+            L.control.layers(baseMaps).addTo(map);
+
+            markersLayer = L.layerGroup().addTo(map);
+
+            const MousePosition = L.Control.extend({
+                options: { position: 'bottomleft' },
+                onAdd: function (map) {
+                    this._div = L.DomUtil.create('div', 'leaflet-bar mouse-coords');
+                    this._div.innerHTML = 'Lat: --, Lon: --';
+                    return this._div;
+                },
+                update: function (lat, lng) {
+                    if (this._div) this._div.innerHTML = `Lat: ${lat.toFixed(5)}, Lon: ${lng.toFixed(5)}`;
+                }
+            });
+
+            mousePosControl = new MousePosition();
+            mousePosControl.addTo(map);
+
+            map.on('mousemove', function (e) {
+                mousePosControl.update(e.latlng.lat, e.latlng.lng);
+            });
+        }
+
+        // --- DOWNLOAD FUNCTION ---
+        function downloadTargets() {
+            const textContent = document.getElementById('targetInput').value;
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            
+            const timestamp = `${year}-${month}-${day}_${hours}${minutes}${seconds}`;
+            const filename = `targets_${timestamp}.txt`;
+
+            const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        }
+
+        // --- ERROR STRING PARSER LOGIC ---
+        function parseErrorString() {
+            let input = document.getElementById('errorStringInput').value.trim();
+            if (!input) return;
+
+            const parts = input.split(',');
+            if (parts[0] !== '$ERRORS') {
+                alert("String format not recognized. Make sure it starts with $ERRORS.");
+                return;
+            }
+
+            const keys = [
+                "Header",
+                "pitch_errors", "roll_errors", "vbd_errors", "pitch_retries", "roll_retries", 
+                "vbd_retries", "GPS_timeouts", "compass_timeouts", "sensor1_timeouts", 
+                "sensor2_timeouts", "sensor3_timeouts", "sensor4_timeouts", "sensor5_timeouts", 
+                "sensor6_timeouts", "logger1_timeouts", "logger2_timeouts", "logger3_timeouts", 
+                "logger4_timeouts"
+            ];
+
+            const container = document.getElementById('parsedErrorResult');
+            container.innerHTML = '';
+            container.style.display = 'grid';
+
+            for (let i = 1; i < parts.length; i++) {
+                const key = keys[i] || `unknown_${i}`;
+                const val = parts[i];
+
+                const div = document.createElement('div');
+                div.className = 'parse-item';
+                
+                const valColor = parseInt(val) > 0 ? '#dc3545' : '#000';
+                
+                div.innerHTML = `<span class="parse-lbl" title="${key}">${key}:</span> <span class="parse-val" style="color: ${valColor};">${val}</span>`;
+                container.appendChild(div);
+            }
+        }
+
+        // --- STATUS PARSER LOGIC ---
+        function parseStatusString() {
+            let input = document.getElementById('statusStringInput').value.trim();
+            if (!input) return;
+
+            let vals1 = [];
+            let vals2 = [];
+            
+            let splitToken = input.includes(' GPS,') ? ' GPS,' : (input.includes(' GPS ') ? ' GPS ' : null);
+
+            if (splitToken) {
+                const parts = input.split(splitToken);
+                vals1 = parts[0].split(':');
+                vals2 = parts[1] ? parts[1].split(',') : [];
+            } else if (input.includes(' ')) {
+                const parts = input.split(' ');
+                vals1 = parts[0].split(':');
+                vals2 = parts[1].replace('GPS,', '').replace('GPS', '').split(',');
+            } else {
+                alert("String format not recognized. Make sure it contains the GPS segment.");
+                return;
+            }
+
+            const allValues = vals1.concat(vals2);
+
+            const keys = [
+                "dive_number", "call_cycle", "calls_made", "no-comm_count", "mission_number", 
+                "reboot_count", "error_code", "ad_pitch", "ad_roll", "ad_vbd", 
+                "observed_pitch", "observed_depth", "internal_temperature", 
+                "10V_battery_voltage", "24V_battery_voltage", "internal_pressure", 
+                "internal_humidity", "date_ddmmyy", "time_utc_hhmmss", "latitude", 
+                "longitude", "time_first_gps_fix", "hdop", "time_acq_fix", "magnetic_variation"
+            ];
+
+            const container = document.getElementById('parsedDataResult');
+            container.innerHTML = '';
+            container.style.display = 'grid';
+
+            for (let i = 0; i < allValues.length; i++) {
+                const key = keys[i] || `unknown_${i}`;
+                const val = allValues[i];
+
+                const div = document.createElement('div');
+                div.className = 'parse-item';
+                div.innerHTML = `<span class="parse-lbl" title="${key}">${key}:</span> <span class="parse-val">${val}</span>`;
+                container.appendChild(div);
+            }
+        }
+
+        // --- UI & CALC FUNCTIONS ---
+        function populateMissionSelect() {
+            const select = document.getElementById('missionSelect');
+            if (!select) return;
+            select.innerHTML = '<option value="">Select D_TGT (Depth)...</option>';
+            missionData.forEach(row => {
+                const opt = document.createElement('option');
+                opt.value = row.d_tgt; opt.innerText = row.d_tgt; select.appendChild(opt);
+            });
+        }
+
+        function updateMissionData() {
+            const val = parseInt(document.getElementById('missionSelect').value);
+            let d_abort = "-", t_dive = "-", t_mission = "-", t_abort = "-";
+            if (!isNaN(val)) {
+                const row = missionData.find(r => r.d_tgt === val);
+                if (row) {
+                    d_abort = row.d_abort; t_dive = row.t_dive; t_mission = row.t_mission; t_abort = row.t_abort;
+                }
+            }
+            document.getElementById('val_d_abort').innerText = d_abort;
+            document.getElementById('val_t_dive').innerText = t_dive;
+            document.getElementById('val_t_mission').innerText = t_mission;
+            document.getElementById('val_t_abort').innerText = t_abort;
+        }
+
+        const distToMeters = { 'nm': 1852, 'km': 1000, 'mi': 1609.34, 'm': 1 };
+        const speedToMPS = { 'kts': 0.514444, 'kph': 0.277778, 'mph': 0.44704, 'mps': 1 };
+
+        function calculateTime() {
+            const distVal = parseFloat(document.getElementById('calcDist').value);
+            const distUnit = document.getElementById('calcDistUnit').value;
+            const speedVal = parseFloat(document.getElementById('calcSpeed').value);
+            const speedUnit = document.getElementById('calcSpeedUnit').value;
+            const resDiv = document.getElementById('timeResult');
+
+            if (isNaN(distVal) || isNaN(speedVal) || speedVal <= 0) {
+                resDiv.innerText = "Error"; resDiv.style.color = "red"; return;
+            }
+
+            const meters = distVal * distToMeters[distUnit];
+            const mps = speedVal * speedToMPS[speedUnit];
+            const totalMinutes = Math.round((meters / mps) / 60);
+            const h = Math.floor(totalMinutes / 60);
+            const m = totalMinutes % 60;
+            resDiv.style.color = "#007bff";
+            resDiv.innerText = `${h > 0 ? h + 'h ' : ''}${m}m`;
+        }
+
+        function convertDMtoDD(coordinate) {
+            const isNegative = coordinate < 0; const absCoord = Math.abs(coordinate);
+            const degrees = Math.floor(absCoord / 100.0); const minutes = absCoord % 100.0;
+            let decimal = degrees + (minutes / 60.0);
+            if (isNegative) decimal = decimal * -1;
+            return decimal;
+        }
+
+        // Coordinates Sync Function
+        function syncCoords(source) {
+            let dd = 0;
+            
+            if (source === 'DD') {
+                dd = parseFloat(document.getElementById('convDD').value);
+                if (isNaN(dd)) { alert("Invalid DD value"); return; }
+            } 
+            else if (source === 'DDM') {
+                const val = parseFloat(document.getElementById('convDDM').value);
+                if (isNaN(val)) { alert("Invalid DDM value"); return; }
+                dd = convertDMtoDD(val);
+            } 
+            else if (source === 'DMS') {
+                const val = document.getElementById('convDMS').value.trim();
+                const parts = val.split(/[\s:,°'"]+/).filter(p => p !== '');
+                if (parts.length < 3) { alert("Invalid DMS format. Expected format: DD MM SS.sss"); return; }
+                
+                let deg = parseFloat(parts[0]);
+                let min = parseFloat(parts[1]);
+                let sec = parseFloat(parts[2]);
+                
+                let isNeg = deg < 0 || val.startsWith('-');
+                deg = Math.abs(deg);
+                
+                dd = deg + (min / 60) + (sec / 3600);
+                if (isNeg) dd = -dd;
+            }
+
+            const isNegative = dd < 0;
+            const absDD = Math.abs(dd);
+
+            // Populate DD format
+            if (source !== 'DD') {
+                document.getElementById('convDD').value = dd.toFixed(6);
+            }
+
+            // Populate DDM format (glider format compatible)
+            if (source !== 'DDM') {
+                const deg = Math.floor(absDD);
+                const min = (absDD - deg) * 60;
+                let ddm = (deg * 100) + min;
+                if (isNegative) ddm = -ddm;
+                document.getElementById('convDDM').value = ddm.toFixed(3);
+            }
+
+            // Populate DMS format
+            if (source !== 'DMS') {
+                const deg = Math.floor(absDD);
+                const rem = absDD - deg;
+                const min = Math.floor(rem * 60);
+                const sec = ((rem * 60) - min) * 60;
+                let sign = isNegative ? "-" : "";
+                document.getElementById('convDMS').value = `${sign}${deg} ${min} ${sec.toFixed(3)}`;
+            }
+        }
+
+        function calcCommTime() {
+            if (countdownInterval) clearInterval(countdownInterval);
+            const val = parseInt(document.getElementById('missionSelect').value);
+            const row = missionData.find(r => r.d_tgt === val);
+            if (!row) { alert("Please select a D_TGT value first."); return; }
+
+            const timeStr = document.getElementById('commInputTime').value.trim();
+            const parts = timeStr.split(':');
+            if (parts.length < 2) { alert("Format HH:MM or HH:MM:SS"); return; }
+            const h = parseInt(parts[0]); const m = parseInt(parts[1]); const s = parts[2] ? parseInt(parts[2]) : 0;
+            if (isNaN(h) || isNaN(m)) { alert("Invalid Time"); return; }
+
+            const now = new Date();
+            const baseUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), h, m, s));
+            const dtEarly = new Date(baseUTC.getTime() + (row.t_dive * 60000));
+            const dtLate = new Date(baseUTC.getTime() + (row.t_mission * 60000));
+            const dtExpect = new Date((dtEarly.getTime() + dtLate.getTime()) / 2);
+
+            const pad = (n) => n.toString().padStart(2, '0');
+            const fmtUTC = (d) => `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+            const fmtEST = (d) => d.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: false, hour: '2-digit', minute: '2-digit' });
+
+            document.getElementById('lblEarliestUTC').innerText = fmtUTC(dtEarly) + "z";
+            document.getElementById('lblEarliestEST').innerText = fmtEST(dtEarly) + "L";
+            document.getElementById('lblExpectedUTC').innerText = fmtUTC(dtExpect) + "z";
+            document.getElementById('lblExpectedEST').innerText = fmtEST(dtExpect) + "L";
+            document.getElementById('lblLatestUTC').innerText = fmtUTC(dtLate) + "z";
+            document.getElementById('lblLatestEST').innerText = fmtEST(dtLate) + "L";
+
+            document.getElementById('timeWindowResult').style.display = 'block';
+            startCountdown(dtExpect);
+        }
+
+        function startCountdown(targetDate) {
+            const lbl = document.getElementById('lblCountdown');
+            const update = () => {
+                const now = new Date();
+                const diff = targetDate.getTime() - now.getTime();
+                const absDiff = Math.abs(diff);
+                const h = Math.floor(absDiff / (1000 * 60 * 60));
+                const m = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
+                const s = Math.floor((absDiff % (1000 * 60)) / 1000);
+                const pad = (n) => n.toString().padStart(2, '0');
+                const timeStr = `${pad(h)}h ${pad(m)}m ${pad(s)}s`;
+
+                if (diff > 0) { lbl.innerText = `T- ${timeStr}`; lbl.classList.remove('overdue'); }
+                else { lbl.innerText = `OVERDUE (T+ ${timeStr})`; lbl.classList.add('overdue'); }
+            };
+            update();
+            countdownInterval = setInterval(update, 1000);
+        }
+
+        function createDiamondIcon(radiusPx, fillOpacity = 0.8, strokeOpacity = 1.0) {
+            const diameter = radiusPx * 2;
+            const svg = `<svg width="${diameter}" height="${diameter}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="50,2 98,50 50,98 2,50" fill="#ff8c00" fill-opacity="${fillOpacity}" stroke="#000000" stroke-opacity="${strokeOpacity}" stroke-width="6"/>
+            </svg>`;
+            return L.divIcon({
+                html: svg,
+                className: '',
+                iconSize: [diameter, diameter],
+                iconAnchor: [radiusPx, radiusPx]
+            });
+        }
+
+        function getCurvedPoints(lat1, lon1, lat2, lon2, curvature = 0.05) {
+            const midLat = (lat1 + lat2) / 2;
+            const midLon = (lon1 + lon2) / 2;
+            const dLat = lat2 - lat1;
+            const dLon = lon2 - lon1;
+
+            const perpLat = -dLon;
+            const perpLon = dLat;
+
+            const ctrlLat = midLat + perpLat * curvature;
+            const ctrlLon = midLon + perpLon * curvature;
+
+            const points = [];
+            const numSegments = 30; 
+            for (let i = 0; i <= numSegments; i++) {
+                const t = i / numSegments;
+                const u = 1 - t;
+                const pointLat = u * u * lat1 + 2 * u * t * ctrlLat + t * t * lat2;
+                const pointLon = u * u * lon1 + 2 * u * t * ctrlLon + t * t * lon2;
+                points.push([pointLat, pointLon]);
+            }
+            return points;
+        }
+
+        function plotTargets() {
+            if (!map) { alert("Map not available (Check connection)."); return; }
+            markersLayer.clearLayers();
+            document.getElementById('statusMessage').innerText = "";
+
+            const userColor = document.getElementById('markerColor').value;
+            let userSize = parseFloat(document.getElementById('markerSize').value);
+            if (isNaN(userSize) || userSize <= 0) userSize = 8;
+            
+            const showEscRoutes = document.getElementById('showEscRoutes').checked;
+
+            const input = document.getElementById('targetInput').value;
+            const lines = input.split('\n');
+            const targetsMap = {}; const bounds = []; let count = 0;
+            const escTargetsSet = new Set();
+
+            lines.forEach((line) => {
+                const trimmedLine = line.trim(); if (!trimmedLine) return;
+                const parts = trimmedLine.split(/\s+/);
+                let name = parts[0]; let latRaw = null; let lonRaw = null; let gotoVal = ""; let escVal = ""; let radiusVal = 0;
+
+                parts.forEach(part => {
+                    if (part.includes("lat=")) latRaw = parseFloat(part.replace("lat=", ""));
+                    if (part.includes("lon=")) lonRaw = parseFloat(part.replace("lon=", ""));
+                    if (part.includes("goto=")) gotoVal = part.replace("goto=", "");
+                    if (part.includes("esc=")) escVal = part.replace("esc=", "");
+                    if (part.includes("escape=")) escVal = part.replace("escape=", "");
+                    if (part.includes("radius=")) radiusVal = parseFloat(part.replace("radius=", ""));
+                    if (name.startsWith("[") && !part.includes("=") && !part.startsWith("[")) name = part;
+                });
+
+                if (latRaw !== null && lonRaw !== null) {
+                    const lat = convertDMtoDD(latRaw); const lon = convertDMtoDD(lonRaw);
+                    targetsMap[name] = { name: name, lat: lat, lon: lon, goto: gotoVal, esc: escVal, radius: radiusVal };
+                    if (escVal) escTargetsSet.add(escVal);
+                    bounds.push([lat, lon]); count++;
+                }
+            });
+
+            Object.values(targetsMap).forEach(target => {
+                const isEscTarget = escTargetsSet.has(target.name) || target.name === "ESC";
+                
+                const baseOpacity = 0.8;
+                const fillOpacityLevel = 0.6;
+                const lineOpacity = 0.8;
+
+                if (target.radius > 0) {
+                    L.circle([target.lat, target.lon], { 
+                        radius: target.radius, 
+                        color: isEscTarget ? '#ff8c00' : userColor, 
+                        weight: 1, 
+                        fill: false, 
+                        opacity: baseOpacity,
+                        dashArray: '5, 5' 
+                    }).addTo(markersLayer);
+                }
+
+                const popupContent = `
+                    <div class="popup-content">
+                        <b>Name:</b> ${target.name}${isEscTarget ? ' <span style="color:#ff8c00;">[ESC TARGET]</span>' : ''}<br>
+                        <b>Coord:</b> ${target.lat.toFixed(4)}, ${target.lon.toFixed(4)}<br>
+                        <b>Radius:</b> ${target.radius}m<br>
+                        <b>Goto:</b> ${target.goto || 'None'}<br>
+                        <b>ESC:</b> ${target.esc || 'None'}
+                    </div>`;
+
+                let marker;
+                if (isEscTarget) {
+                    marker = L.marker([target.lat, target.lon], {
+                        icon: createDiamondIcon(userSize, 0.8, baseOpacity)
+                    });
+                } else {
+                    marker = L.circleMarker([target.lat, target.lon], { 
+                        radius: userSize, 
+                        color: 'black',
+                        opacity: baseOpacity, 
+                        fillColor: userColor, 
+                        fillOpacity: fillOpacityLevel, 
+                        weight: 1 
+                    });
+                }
+
+                marker.bindPopup(popupContent); 
+                marker.bindTooltip(target.name); 
+                markersLayer.addLayer(marker);
+
+                if (target.goto && targetsMap[target.goto] && target.goto !== target.name) {
+                    const dest = targetsMap[target.goto];
+                    const curvedLatLngs = getCurvedPoints(target.lat, target.lon, dest.lat, dest.lon, 0.05); 
+
+                    const polyline = L.polyline(curvedLatLngs, { 
+                        color: userColor, 
+                        weight: 2, 
+                        opacity: lineOpacity 
+                    }).addTo(markersLayer);
+                    
+                    try {
+                        if (typeof L.polylineDecorator !== 'undefined') {
+                            L.polylineDecorator(polyline, { 
+                                patterns: [{ 
+                                    offset: '50%',
+                                    repeat: 0, 
+                                    symbol: L.Symbol.arrowHead({ 
+                                        pixelSize: userSize * 0.75, 
+                                        polygon: true, 
+                                        pathOptions: { stroke: true, color: userColor, weight: 2, fillOpacity: lineOpacity, opacity: lineOpacity } 
+                                    }) 
+                                }] 
+                            }).addTo(markersLayer);
+                        }
+                    } catch (e) { console.error("Arrow error", e); }
+                }
+
+                if (showEscRoutes && target.esc && targetsMap[target.esc] && target.esc !== target.name) {
+                    const escDest = targetsMap[target.esc];
+                    const escCurvedLatLngs = getCurvedPoints(target.lat, target.lon, escDest.lat, escDest.lon, 0.05); 
+
+                    const escPolyline = L.polyline(escCurvedLatLngs, { 
+                        color: '#ff8c00', 
+                        weight: 2, 
+                        opacity: lineOpacity, 
+                        dashArray: '6, 6' 
+                    }).addTo(markersLayer);
+
+                    try {
+                        if (typeof L.polylineDecorator !== 'undefined') {
+                            L.polylineDecorator(escPolyline, { 
+                                patterns: [{ 
+                                    offset: '50%',
+                                    repeat: 0, 
+                                    symbol: L.Symbol.arrowHead({ 
+                                        pixelSize: userSize * 0.75, 
+                                        polygon: true, 
+                                        pathOptions: { stroke: true, color: '#ff8c00', weight: 2, fillOpacity: lineOpacity, opacity: lineOpacity } 
+                                    }) 
+                                }] 
+                            }).addTo(markersLayer);
+                        }
+                    } catch (e) { console.error("ESC Arrow error", e); }
+                }
+            });
+
+            if (count > 0) { 
+                window.targetBounds = bounds; // Store bounds globally
+                map.fitBounds(bounds, { padding: [50, 50] }); 
+                document.getElementById('statusMessage').style.color = "green"; 
+                document.getElementById('statusMessage').innerText = `Plotted ${count} targets.`; 
+                map.invalidateSize(); 
+            } else { 
+                document.getElementById('statusMessage').style.color = "red"; 
+                document.getElementById('statusMessage').innerText = "No targets."; 
+            }
+        }
+
+        window.onload = function () { populateMissionSelect(); initMap(); };
+    </script>
+</body>
+
+</html>

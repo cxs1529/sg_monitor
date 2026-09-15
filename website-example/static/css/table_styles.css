@@ -1,0 +1,74 @@
+body {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.table_row:nth-child(even) {
+    background-color:#90DFE3;
+}
+
+.table_row:nth-child(odd) {
+    background-color: #FFFFFF;
+}
+
+.table_header {
+    background-color:#006178;
+	color: white;
+    text-align: center;
+    font-weight: bold;
+    padding: 5px;
+    margin: 1px;
+    border-spacing: 1px;
+}
+
+.table_row {
+    padding: 10px;
+    border-spacing: 1px;
+}
+
+.table_row:hover {
+    background-color: #FF8400;
+}
+
+.table {
+	font-family: Helvetica;
+    border-spacing: 1px;
+    margin: 1px;
+    border: 1px solid #ddd;
+    width: 100%;
+    text-align: center;
+    white-space: nowrap;
+    padding: 5px;
+}
+
+.data_normal {
+    padding: 5px;
+    width: 100%;
+    border: 1px solid #ddd;
+    border-spacing: 1px;    
+}
+
+.data_warning {
+    padding: 5px;
+    width: 100%;
+    border: 1px solid red;
+    border-spacing: 1px;  
+    color: red;
+}
+
+.data_change {
+    padding: 5px;
+    width: 100%;
+    border: 1px solid #ddd;
+    border-spacing: 1px;  
+    background-color: #CDCFD1;
+}
+
+
+h1 {
+	text-align: center;
+	font-size: 40px;
+	font-weight: 600;
+	color: #003087;
+	padding: 1px;
+	margin: 5px
+}
