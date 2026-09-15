@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seaglider Ballast - Operation Ranges</title>
+    <!-- Load Plotly.js for charting -->
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+            display: flex;
+            gap: 20px;
+        }
+        .sidebar {
+            width: 320px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .sidebar h3 {
+            margin-top: 20px;
+            font-size: 1.1em;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 5px;
+        }
+        .sidebar h3:first-child {
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .form-group input[type="number"] {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .main-content {
+            flex-grow: 1;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        #plot {
+            width: 100%;
+            height: 700px;
+        }
+        .result-box {
+            font-size: 0.9em;
+            padding: 12px;
+            background: #eef2f5;
+            border-left: 4px solid #007bff;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .result-box.green-border {
+            border-left: 4px solid #28a745;
+        }
+        .adcc-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .adcc-label span {
+            font-size: 0.8em;
+            font-weight: normal;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h3>Ballast Adjustment Tool</h3>
+        <div class="form-group" title="Target C_VBD you want to achieve">
+            <label>Target CVBD (AD Count)</label>
+            <input type="number" id="target_CVBD" value="2700" onchange="updatePlot()">
+        </div>
+        <div id="ballast_result" class="result-box">
+            <!-- Results will inject here -->
+        </div>
+
+        <h3>Environment Projection</h3>
+        <div class="form-group" title="Hypothetical open ocean sigma to predict new CVBD without physical ballast changes">
+            <label>Hypothetical New Sigma</label>
+            <input type="number" id="hypo_sigma" step="0.1" value="25" onchange="updatePlot()">
+        </div>
+        <div id="hypo_result" class="result-box green-border">
+            <!-- Projection Results will inject here -->
+        </div>
+
+        <h3>Constants</h3>
+        <div class="form-group" title="cm3 for every sigma density change">
+            <label>CC_SIGMA</label>
+            <input type="number" id="cc_sigma" step="0.1" value="49.5" onchange="updatePlot()">
+        </div>
+        <div class="form-group" title="AD to cm3 conversion ratio. This is a fixed value">
+            <label class="adcc-label">
+                AD_CC 
+                <span><input type="checkbox" id="enable_ad_cc" onchange="toggleADCC()"> Edit</span>
+            </label>
+            <input type="number" id="ad_cc" step="0.001" value="4.077" disabled onchange="updatePlot()">
+        </div>
+
+        <h3>Physical Parameters</h3>
+        <div class="form-group" title='usually around 800-830cm (find in ballast sheet, "CAL" tab, Total movable oil volume)'>
+            <label>VBD Vol Max (cc)</label>
+            <input type="number" id="vbdVolMax" value="830" onchange="updatePlot()">
+        </div>
+        <div class="form-group" title="hardcoded in the prm file (find $VBD_MAX the .log parameters)">
+            <label>Software Max AD</label>
+            <input type="number" id="vbd_adMax" value="3900" onchange="updatePlot()">
+        </div>
+        <div class="form-group" title="hardcoded in the prm file (find $VBD_MIN the .log parameters)">
+            <label>Software Min AD</label>
+            <input type="number" id="vbd_adMin" value="600" onchange="updatePlot()">
+        </div>
+
+        <h3>Ballasting Parameters</h3>
+        <div class="form-group" title="C_VBD obtained during in-water ballast">
+            <label>Current CVBD (AD Count)</label>
+            <input type="number" id="vbd_adCVBD" value="2790" onchange="updatePlot()">
+        </div>
+        <div class="form-group" title="sigma density of seawater during in-water ballas">
+            <label>Sigma Ballast</label>
+            <input type="number" id="sigmaBallast" step="0.1" value="22.8" onchange="updatePlot()">
+        </div>
+
+        <h3>Mission Parameters</h3>
+        <div class="form-group" title="expected densities in the open ocean (surface and deep water)">
+            <label>Min Sigma Required</label>
+            <input type="number" id="sigmaMinReq" step="0.1" value="16" onchange="updatePlot()">
+        </div>
+        <div class="form-group" title="expected densities in the open ocean (surface and deep water)">
+            <label>Max Sigma Required</label>
+            <input type="number" id="sigmaMaxReq" step="0.1" value="27.5" onchange="updatePlot()">
+        </div>
+        
+        <button onclick="updatePlot()" style="width:100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Refresh Data</button>
+    </div>
+
+    <div class="main-content">
+        <div id="plot"></div>
+    </div>
+
+    <script>
+        function toggleADCC() {
+            const adccInput = document.getElementById('ad_cc');
+            const checkbox = document.getElementById('enable_ad_cc');
+            adccInput.disabled = !checkbox.checked;
+        }
+
+        function calculateBallast(vbdVolMax, vbd_adMax, deltaAD, currentCVBD, targetCVBD, sigmaBallast) {
+            const ad_to_vol = (ad) => vbdVolMax * (vbd_adMax - ad) / deltaAD;
+            
+            const vol_current = ad_to_vol(currentCVBD);
+            const vol_target = ad_to_vol(targetCVBD);
+            const delta_vol = vol_target - vol_current;
+            
+            // Densities
+            const rho_w = 1 + (sigmaBallast / 1000); 
+            const rho_lead = 11.2960;
+            const rho_foam = 0.42;
+            
+            // Mass calculations
+            const mass_lead = (rho_w * delta_vol) / (1 - (rho_w / rho_lead));
+            const mass_foam = (rho_w * delta_vol) / (1 - (rho_w / rho_foam));
+            
+            let resultHTML = `<b>To reach Target CVBD (${targetCVBD}):</b><br><br>`;
+            
+            if (delta_vol === 0) {
+                resultHTML += `<span style="color: green;">Target matches Current. No changes needed.</span>`;
+            } else {
+                if (mass_lead > 0) {
+                    resultHTML += `&bull; Add <b>${mass_lead.toFixed(1)} g</b> of Lead<br><div style="text-align:center; font-size:0.8em; margin: 5px 0;">- OR -</div>`;
+                } else {
+                    resultHTML += `&bull; Remove <b>${Math.abs(mass_lead).toFixed(1)} g</b> of Lead<br><div style="text-align:center; font-size:0.8em; margin: 5px 0;">- OR -</div>`;
+                }
+                
+                if (mass_foam > 0) {
+                    resultHTML += `&bull; Add <b>${mass_foam.toFixed(1)} g</b> of Syntactic Foam`;
+                } else {
+                    resultHTML += `&bull; Remove <b>${Math.abs(mass_foam).toFixed(1)} g</b> of Syntactic Foam`;
+                }
+            }
+            
+            document.getElementById('ballast_result').innerHTML = resultHTML;
+        }
+
+        function calculateProjection(currentCVBD, sigmaBallast, hypoSigma, deltaAD, CC_SIGMA, vbdVolMax) {
+            // Calculate what CVBD would be without changing mass
+            const projected_CVBD = currentCVBD + (hypoSigma - sigmaBallast) * (deltaAD * CC_SIGMA) / vbdVolMax;
+            
+            document.getElementById('hypo_result').innerHTML = `
+                <b>Projected CVBD:</b> ${Math.round(projected_CVBD)} AD<br>
+                <span style="font-size: 0.85em; color: #555;">(At &sigma; = ${hypoSigma}, without ballast changes)</span>
+            `;
+        }
+
+        function updatePlot() {
+            // Read values from HTML inputs
+            const CC_SIGMA = parseFloat(document.getElementById('cc_sigma').value);
+            const vbdVolMax = parseFloat(document.getElementById('vbdVolMax').value);
+            const vbd_adMax = parseFloat(document.getElementById('vbd_adMax').value);
+            const vbd_adMin = parseFloat(document.getElementById('vbd_adMin').value);
+            const vbd_adCVBD = parseFloat(document.getElementById('vbd_adCVBD').value);
+            const sigmaBallast = parseFloat(document.getElementById('sigmaBallast').value);
+            const sigmaMinReq = parseFloat(document.getElementById('sigmaMinReq').value);
+            const sigmaMaxReq = parseFloat(document.getElementById('sigmaMaxReq').value);
+            const target_CVBD = parseFloat(document.getElementById('target_CVBD').value);
+            const hypo_sigma = parseFloat(document.getElementById('hypo_sigma').value);
+
+            const deltaAD = vbd_adMax - vbd_adMin;
+            
+            // Update the tools
+            calculateBallast(vbdVolMax, vbd_adMax, deltaAD, vbd_adCVBD, target_CVBD, sigmaBallast);
+            calculateProjection(vbd_adCVBD, sigmaBallast, hypo_sigma, deltaAD, CC_SIGMA, vbdVolMax);
+            
+            // Helper functions
+            const ad_to_vol = (ad) => vbdVolMax * (vbd_adMax - ad) / deltaAD;
+            
+            // Generate X array (AD Counts)
+            const ad_x = [];
+            for (let i = vbd_adMin; i <= vbd_adMax; i += 10) {
+                ad_x.push(i);
+            }
+
+            const data = [];
+            const annotations = [];
+
+            // 1. Generate Sigma lines for different offsets (-600 to +600)
+            for (let offset = -600; offset <= 600; offset += 100) {
+                const sigma_y = ad_x.map(x => vbdVolMax * (x - vbd_adCVBD + offset) / (deltaAD * CC_SIGMA) + sigmaBallast);
+                
+                if (offset === 0) {
+                    data.push({
+                        x: ad_x, y: sigma_y,
+                        mode: 'lines', line: {color: 'blue', width: 2},
+                        name: 'CVBD Main', yaxis: 'y1'
+                    });
+                } else {
+                    data.push({
+                        x: ad_x, y: sigma_y,
+                        mode: 'lines', line: {color: 'grey', width: 0.5},
+                        showlegend: false, hoverinfo: 'skip', yaxis: 'y1'
+                    });
+                    
+                    annotations.push({
+                        x: vbd_adCVBD + offset,
+                        y: sigmaBallast + 0.1,
+                        text: (offset > 0 ? '+' : '') + offset,
+                        showarrow: false,
+                        font: {size: 10, color: 'grey'},
+                        textangle: -40
+                    });
+                }
+            }
+
+            // 2. Relative Volume mapping (Second Y-Axis)
+            const cvbd_vol = ad_to_vol(vbd_adCVBD);
+            const rvol_y = ad_x.map(x => vbdVolMax * (vbd_adMax - x) / deltaAD - cvbd_vol);
+            
+            data.push({
+                x: ad_x, y: rvol_y,
+                mode: 'lines', line: {color: 'red', width: 0.5, dash: 'dot'},
+                fill: 'tozeroy', fillcolor: 'rgba(255, 0, 0, 0.1)',
+                name: 'Relative Vol', yaxis: 'y2'
+            });
+
+            // 3. Antenna Margin (Green Fill)
+            const rvolMax = vbdVolMax * (vbd_adMax - vbd_adMin) / deltaAD - cvbd_vol;
+            const rvolMin = vbdVolMax * (vbd_adMax - vbd_adMax) / deltaAD - cvbd_vol;
+            const vol_antenna = rvolMax - 150;
+            const antenna_y = ad_x.map(() => vol_antenna);
+            const rvolMax_y = ad_x.map(() => rvolMax);
+
+            data.push({
+                x: ad_x, y: antenna_y,
+                mode: 'lines', line: {width: 0},
+                showlegend: false, hoverinfo: 'skip', yaxis: 'y2'
+            });
+            data.push({
+                x: ad_x, y: rvolMax_y,
+                mode: 'lines', fill: 'tonexty', fillcolor: 'rgba(0, 128, 0, 0.2)',
+                line: {width: 0}, name: 'Antenna Expose Vol', yaxis: 'y2'
+            });
+
+            // 4. Calculate stroke performance
+            const stroke = 100 * vbd_adCVBD / deltaAD;
+            let strokeText = `Stroke=${stroke.toFixed(1)}% -> `;
+            if (stroke > 70) strokeText += "Glider is light";
+            else if (stroke < 70) strokeText += "Glider is heavy";
+            else strokeText += "Glider is perfect";
+
+            // Determine possible extremes
+            const sigmaMinPossible = vbdVolMax * (vbd_adMin - vbd_adCVBD) / (deltaAD * CC_SIGMA) + sigmaBallast;
+            const sigmaMaxPossible = vbdVolMax * (vbd_adMax - vbd_adCVBD) / (deltaAD * CC_SIGMA) + sigmaBallast;
+
+            // Layout & Static Annotations/Lines
+            const layout = {
+                title: 'SeaGlider Ballast Chart - Operation Ranges',
+                legend: {
+                    orientation: 'h', 
+                    y: 1.05,          
+                    x: 0.5,           
+                    xanchor: 'center'
+                },
+                margin: {
+                    r: 60             
+                },
+                xaxis: { title: 'VBD AD count', range: [vbd_adMin, vbd_adMax] },
+                yaxis: { 
+                    title: 'Sigma (\u03C3)', 
+                    range: [sigmaMinPossible, sigmaMaxPossible],
+                    showgrid: true, gridcolor: '#eee' 
+                },
+                yaxis2: {
+                    title: 'VBD displaced volume [cc]',
+                    titlefont: {color: 'red'},
+                    tickfont: {color: 'red'},
+                    overlaying: 'y',
+                    side: 'right',
+                    range: [rvolMax, rvolMin] 
+                },
+                shapes: [
+                    // CVBD Vertical Line
+                    { type: 'line', x0: vbd_adCVBD, x1: vbd_adCVBD, y0: 0, y1: 1, yref: 'paper', line: {color: 'blue', dash: 'dot', width: 1} },
+                    // Target CVBD Vertical Line
+                    { type: 'line', x0: target_CVBD, x1: target_CVBD, y0: 0, y1: 1, yref: 'paper', line: {color: 'orange', dash: 'dash', width: 1} },
+                    // Ballast Horizontal Line
+                    { type: 'line', x0: 0, x1: 1, xref: 'paper', y0: sigmaBallast, y1: sigmaBallast, line: {color: 'blue', dash: 'dot', width: 1} },
+                    // Min/Max Required Sigma Lines
+                    { type: 'line', x0: 0, x1: 1, xref: 'paper', y0: sigmaMinReq, y1: sigmaMinReq, line: {color: 'magenta', dash: 'dashdot', width: 1} },
+                    { type: 'line', x0: 0, x1: 1, xref: 'paper', y0: sigmaMaxReq, y1: sigmaMaxReq, line: {color: 'magenta', dash: 'dashdot', width: 1} },
+                ],
+                annotations: [
+                    ...annotations,
+                    { x: vbd_adCVBD - 50, y: sigmaMinPossible + 0.5, text: `Current CVBD=${vbd_adCVBD}`, showarrow: false, font: {color: 'blue'}, textangle: -90 },
+                    { x: target_CVBD + 50, y: sigmaMinPossible + 0.5, text: `Target CVBD=${target_CVBD}`, showarrow: false, font: {color: 'orange'}, textangle: -90 },
+                    { x: vbd_adCVBD - 800, y: sigmaMaxReq + 0.3, text: `Max water density: ${sigmaMaxReq}`, showarrow: false, font: {color: 'magenta'} },
+                    { x: vbd_adCVBD + 200, y: sigmaMinReq + 0.3, text: `Min water density: ${sigmaMinReq}`, showarrow: false, font: {color: 'magenta'} },
+                    { x: vbd_adCVBD + 200, y: 0.1, yref: 'paper', text: `${Math.floor(vol_antenna)} cc (Vmax-150)`, showarrow: false, font: {color: 'green'} },
+                    { x: vbd_adMin + 400, y: 0.8, yref: 'paper', text: 'PUMP<br>REGION', showarrow: false, font: {color: 'red', size: 10} },
+                    { x: vbd_adMax - 400, y: 0.2, yref: 'paper', text: 'BLEED<br>REGION', showarrow: false, font: {color: 'red', size: 10} },
+                    { x: vbd_adMin + 200, y: sigmaBallast + 0.5, text: strokeText, showarrow: false, font: {size: 12} }
+                ]
+            };
+
+            Plotly.newPlot('plot', data, layout);
+        }
+
+        // Initialize plot on first load
+        window.onload = updatePlot;
+    </script>
+</body>
+</html>

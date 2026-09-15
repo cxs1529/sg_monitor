@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %} Seaglider Monitor Home {% endblock %}
+
+{% block content %}
+<!-- general css format for homepage -->
+<link rel="stylesheet" href="static/css/home_styles.css" />
+<!-- status table specific format -->
+<link rel="stylesheet" href="static/css/status_styles.css" />
+
+<h1>Seaglider Piloting Home Page</h1>
+
+<!-- status table with notes and gliders on each port -->
+{{ status_table_html|safe }}
+
+<!-- seaglider table -->
+{{ summary_html|safe }}
+
+<hr>
+
+<!-- Links / Navigation Buttons -->
+<div class="button-container">
+    <a href="https://aoml.seaglider.pub/" class="btn" target="_blank">aoml-seaglider.pub</a>
+    <a href="https://caricoos.seaglider.pub/" class="btn" target="_blank">caricoos-seaglider.pub</a>
+    <a href="https://seaglider.pub/parms" class="btn" target="_blank">parameter-manual</a>
+    <a href="static/tools.html" class="btn">piloting-tools</a>
+    <a href="static/ballast.html" class="btn">ballast-tools (beta)</a>
+</div>
+
+<hr>
+
+<iframe src="static/{{fname}}"></iframe>
+<hr>
+<iframe src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=default&metricWind=default&zoom=6&overlay=currents&product=cmems&level=surface&lat=20.571&lon=-65.105&message=true" frameborder="0"></iframe>
+<hr>
+<iframe src="https://www.nhc.noaa.gov/" title="NHC"></iframe>
+<hr>
+
+{% endblock %}

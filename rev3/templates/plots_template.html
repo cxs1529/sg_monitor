@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %} SG{{sgid}} Plots {% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="static/css/plots_styles.css" />
+
+<h1>SG{{sgid}} PLOTS</h1>
+
+<iframe src="static/{{health_plot}}" width="1250" height="650" frameborder="0"></iframe>
+
+<iframe src="static/{{rates_plot}}" width="1250" height="850" frameborder="0"></iframe>
+<iframe src="static/{{calls_plot}}" width="1250" height="450" frameborder="0"></iframe>
+<iframe src="static/{{navigation_plot}}" width="1250" height="550" frameborder="0"></iframe>
+<iframe src="static/{{navpolar_plot}}" width="650" height="650" frameborder="0"></iframe>
+
+
+{% endblock %}
